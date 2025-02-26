@@ -23,8 +23,7 @@ void q_free(struct list_head *head)
     struct list_head *pos, *safe;
     list_for_each_safe (pos, safe, head) {
         element_t *element = list_entry(pos, element_t, list);
-        free(element->value);
-        free(element);
+        q_release_element(element);
     }
     free(head);
 }
@@ -40,7 +39,7 @@ bool q_insert_head(struct list_head *head, char *s)
     size_t len = strlen(s) + 1;
     new_element->value = malloc(len * sizeof(char));
     if (!new_element->value) {
-        free(new_element);
+        q_release_element(new_element);
         return false;
     }
     strncpy(new_element->value, s, len - 1);
@@ -61,7 +60,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     size_t len = strlen(s) + 1;
     new_element->value = malloc(len * sizeof(char));
     if (!new_element->value) {
-        free(new_element);
+        q_release_element(new_element);
         return false;
     }
     strncpy(new_element->value, s, len - 1);
@@ -130,8 +129,7 @@ bool q_delete_mid(struct list_head *head)
 
     list_del(slow);
     element_t *element = list_entry(slow, element_t, list);
-    free(element->value);
-    free(element);
+    q_release_element(element);
     return true;
 }
 
