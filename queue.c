@@ -209,13 +209,6 @@ void q_reverseK(struct list_head *head, int k)
     list_splice(&result, head);
 }
 
-struct list_head *q_tail(struct list_head *head)
-{
-    while (head && head->next)
-        head = head->next;
-    return head;
-}
-
 static void rebuild_list_link(struct list_head *head)
 {
     if (!head)
@@ -232,57 +225,73 @@ static void rebuild_list_link(struct list_head *head)
     head->prev = prev;
 }
 
-void quick_sort(struct list_head *head)
+struct list_head *mergeTwoLists(struct list_head *left, struct list_head *right)
 {
-    const char *value;
-    int i = 0;
-    struct list_head *begin[100000];
-    struct list_head *result = NULL, *left = NULL, *right = NULL;
-    begin[0] = head->next;
-    head->prev->next = NULL;
-    while (i >= 0) {
-        struct list_head *L = begin[i], *R = q_tail(begin[i]);
-        if (L != R) {
-            struct list_head *pivot = L;
-            value = list_entry(pivot, element_t, list)->value;
-            struct list_head *p = pivot->next;
-            pivot->next = NULL;
-
-            while (p) {
-                struct list_head *n = p;
-                p = p->next;
-                const char *n_value = list_entry(n, element_t, list)->value;
-                if (strcmp(n_value, value) > 0) {
-                    n->next = right;
-                    right = n;
-                } else {
-                    n->next = left;
-                    left = n;
-                }
-            }
-            begin[i] = left;
-            begin[i + 1] = pivot;
-            begin[i + 2] = right;
-            left = right = NULL;
-            i += 2;
+    struct list_head *result = NULL, *current = NULL;
+    while (left && right) {
+        const element_t *left_element = list_entry(left, element_t, list);
+        const element_t *right_element = list_entry(right, element_t, list);
+        struct list_head *get;
+        if (strcmp(left_element->value, right_element->value) > 0) {
+            get = right;
+            right = right->next;
         } else {
-            if (L) {
-                L->next = result;
-                result = L;
-            }
-            i--;
+            get = left;
+            left = left->next;
         }
+        if (!result)
+            result = get;
+        else {
+            current->next = get;
+            get->prev = current;
+        }
+        current = get;
     }
-    head->next = result;
-    rebuild_list_link(head);
+    if (current) {
+        if (left) {
+            current->next = left;
+            left->prev = current;
+        } else if (right) {
+            current->next = right;
+            right->prev = current;
+        } else {
+            current->next = NULL;
+        }
+    } else {
+        result = left ? left : right;
+    }
+
+    return result;
 }
 
+struct list_head *merge_sort(struct list_head *head)
+{
+    if (!head || !head->next)
+        return head;
+
+    struct list_head *slow = head;
+    for (const struct list_head *fast = slow->next; fast && fast->next;
+         fast = fast->next->next)
+        slow = slow->next;
+    struct list_head *mid = slow->next;
+    slow->next = NULL;
+
+    struct list_head *left_sorted = merge_sort(head);
+    struct list_head *right_sorted = merge_sort(mid);
+
+
+    return mergeTwoLists(left_sorted, right_sorted);
+}
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend)
 {
     if (!head || list_empty(head))
         return;
-    quick_sort(head);
+    head->prev->next = NULL;
+    head->next = merge_sort(head->next);
+    rebuild_list_link(head);
+    if (descend)
+        q_reverse(head);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
