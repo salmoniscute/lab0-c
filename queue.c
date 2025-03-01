@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -208,8 +209,81 @@ void q_reverseK(struct list_head *head, int k)
     list_splice(&result, head);
 }
 
+struct list_head *q_tail(struct list_head *head)
+{
+    while (head && head->next)
+        head = head->next;
+    return head;
+}
+
+static void rebuild_list_link(struct list_head *head)
+{
+    if (!head)
+        return;
+    struct list_head *node, *prev;
+    prev = head;
+    node = head->next;
+    while (node) {
+        node->prev = prev;
+        prev = node;
+        node = node->next;
+    }
+    prev->next = head;
+    head->prev = prev;
+}
+
+void quick_sort(struct list_head *head)
+{
+    const char *value;
+    int i = 0;
+    struct list_head *begin[100000];
+    struct list_head *result = NULL, *left = NULL, *right = NULL;
+    begin[0] = head->next;
+    head->prev->next = NULL;
+    while (i >= 0) {
+        struct list_head *L = begin[i], *R = q_tail(begin[i]);
+        if (L != R) {
+            struct list_head *pivot = L;
+            value = list_entry(pivot, element_t, list)->value;
+            struct list_head *p = pivot->next;
+            pivot->next = NULL;
+
+            while (p) {
+                struct list_head *n = p;
+                p = p->next;
+                const char *n_value = list_entry(n, element_t, list)->value;
+                if (strcmp(n_value, value) > 0) {
+                    n->next = right;
+                    right = n;
+                } else {
+                    n->next = left;
+                    left = n;
+                }
+            }
+            begin[i] = left;
+            begin[i + 1] = pivot;
+            begin[i + 2] = right;
+            left = right = NULL;
+            i += 2;
+        } else {
+            if (L) {
+                L->next = result;
+                result = L;
+            }
+            i--;
+        }
+    }
+    head->next = result;
+    rebuild_list_link(head);
+}
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || list_empty(head))
+        return;
+    quick_sort(head);
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
@@ -220,16 +294,16 @@ int q_ascend(struct list_head *head)
     if (head->next == head->prev)
         return 1;
 
-    element_t *curr = list_entry(head->next, element_t, list);
-    const char *max_value = curr->value;
+    element_t *curr = list_entry(head->prev, element_t, list);
+    const char *min_value = curr->value;
 
     while (&curr->list != head) {
-        element_t *next = list_entry(curr->list.next, element_t, list);
-        if (strcmp(curr->value, max_value) < 0) {
+        element_t *next = list_entry(curr->list.prev, element_t, list);
+        if (strcmp(curr->value, min_value) > 0) {
             list_del(&curr->list);
             q_release_element(curr);
         } else {
-            max_value = curr->value;
+            min_value = curr->value;
         }
         curr = next;
     }
