@@ -344,10 +344,46 @@ int q_descend(struct list_head *head)
     return q_size(head);
 }
 
+void mergeTwoLists_2(struct list_head *left,
+                     struct list_head *right,
+                     bool descend)
+{
+    if (list_empty(left) && list_empty(right))
+        return;
+
+    LIST_HEAD(result);
+    while (!list_empty(left) && !list_empty(right)) {
+        element_t *left_element = list_first_entry(left, element_t, list);
+        element_t *right_element = list_first_entry(right, element_t, list);
+        int cmp = strcmp(left_element->value, right_element->value);
+        if ((descend && cmp < 0) || (!descend && cmp > 0))
+            list_move_tail(&right_element->list, &result);
+        else
+            list_move_tail(&left_element->list, &result);
+    }
+    list_splice_tail_init(left, &result);
+    list_splice_tail_init(right, &result);
+    list_splice(&result, left);
+}
+
 /* Merge all the queues into one sorted queue, which is in ascending/descending
  * order */
 int q_merge(struct list_head *head, bool descend)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    queue_contex_t *first = list_first_entry(head, queue_contex_t, chain);
+    int result = q_size(first->q);
+
+    if (list_is_singular(head))
+        return result;
+
+    queue_contex_t *second =
+        list_entry(first->chain.next, queue_contex_t, chain);
+    while (&second->chain != head) {
+        result += q_size(second->q);
+        mergeTwoLists_2(first->q, second->q, descend);
+        second = list_entry(second->chain.next, queue_contex_t, chain);
+    }
+    return result;
 }
