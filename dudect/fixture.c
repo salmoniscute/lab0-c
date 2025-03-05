@@ -170,6 +170,7 @@ static bool doit(int mode)
     free(exec_times);
     free(classes);
     free(input_data);
+    free(percentiles);
 
     return ret;
 }
