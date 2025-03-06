@@ -387,3 +387,28 @@ int q_merge(struct list_head *head, bool descend)
     }
     return result;
 }
+
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    int len = q_size(head);
+
+    struct list_head *new;
+    for (new = head->prev; new != head &&len > 0; new = new->prev, len--) {
+        int random = rand() % len;
+        struct list_head *old = head->next;
+        for (int i = 0; i < random; i++) {
+            old = old->next;
+        }
+        if (old == new)
+            continue;
+
+        element_t *old_element = list_entry(old, element_t, list);
+        element_t *new_element = list_entry(new, element_t, list);
+        char *temp = old_element->value;
+        old_element->value = new_element->value;
+        new_element->value = temp;
+    }
+}
